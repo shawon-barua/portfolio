@@ -1,3 +1,4 @@
+import { AiOutlineDownload } from 'react-icons/ai';
 import { FALLBACK_IMAGE } from '../../constants';
 import { Profile } from '../../interfaces/profile';
 import { skeleton } from '../../utils';
@@ -85,11 +86,12 @@ const AvatarCard: React.FC<AvatarCardProps> = ({
             <a
               href={resumeFileUrl}
               target="_blank"
-              className="btn btn-outline btn-sm text-xs mt-6 opacity-50"
-              download
-              rel="noreferrer"
+              download="Shawon_Barua_Resume.pdf"
+              className="btn btn-primary btn-outline btn-sm text-xs mt-6 font-semibold inline-flex items-center gap-1.5 hover:scale-105 transition-transform"
+              rel="noopener noreferrer"
             >
-              Download Resume
+              <AiOutlineDownload className="text-base" />
+              <span>Download Resume</span>
             </a>
           ))}
       </div>

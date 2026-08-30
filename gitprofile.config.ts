@@ -14,25 +14,26 @@ const CONFIG = {
     github: {
       display: true, // Display GitHub projects?
       header: 'Featured GitHub Projects',
-      mode: 'automatic', // Mode can be: 'automatic' or 'manual'
+      mode: 'manual', // Mode can be: 'automatic' or 'manual'
       automatic: {
         sortBy: 'updated', // Sort projects by 'stars' or 'updated'
         limit: 8, // How many projects to display.
         exclude: {
           forks: false, // Forked projects will not be displayed if set to true.
-          projects: [], // These projects will not be displayed. example: ['arifszn/my-project1', 'arifszn/my-project2']
+          projects: ['shawon-barua/portfolio', 'portfolio'], // These projects will not be displayed.
         },
       },
       manual: {
         // Properties for manually specifying projects
         projects: [
           'shawon-barua/API-RestAssured-TestNG-Automation',
-          'shawon-barua/Playwright-Pom',
+          'shawon-barua/test_cases',
           'shawon-barua/cypress-pom',
           'shawon-barua/Android_iOS-App-Automation',
-          'shawon-barua/automation-test-reviewer',
-          'shawon-barua/protractor-POM',
-          'shawon-barua/TourSight',
+          'shawon-barua/Playwright-Pom',
+          'shawon-barua/Toyota_used_car_analysis',
+          'shawon-barua/cucumber-jvm-selenium-example-master',
+          'shawon-barua/Selenium-java-POM-TestNG',
         ],
       },
     },
@@ -88,7 +89,7 @@ const CONFIG = {
   },
   resume: {
     fileUrl:
-      'https://drive.google.com/file/d/1FARFQ1b92L-H8XbrbBQcgw3ctHRTQOeE/view?usp=sharing', // Empty fileUrl will hide the `Download Resume` button.
+      '/portfolio/shawon_resume.pdf', // Empty fileUrl will hide the `Download Resume` button.
   },
   skills: [
     'Test Automation',

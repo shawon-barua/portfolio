@@ -42,7 +42,8 @@ const FALLBACK_PROFILE: Profile = {
 const FALLBACK_GITHUB_PROJECTS: GithubProject[] = [
   {
     name: 'API-RestAssured-TestNG-Automation',
-    html_url: 'https://github.com/shawon-barua/API-RestAssured-TestNG-Automation',
+    html_url:
+      'https://github.com/shawon-barua/API-RestAssured-TestNG-Automation',
     description:
       'Repository to showcase API automation by RestAssured, TESTNG, JAVA',
     stargazers_count: '0',
@@ -50,13 +51,13 @@ const FALLBACK_GITHUB_PROJECTS: GithubProject[] = [
     language: 'Java',
   },
   {
-    name: 'Playwright-Pom',
-    html_url: 'https://github.com/shawon-barua/Playwright-Pom',
+    name: 'test_cases',
+    html_url: 'https://github.com/shawon-barua/test_cases',
     description:
-      'Scalable automation framework built with Microsoft Playwright and TypeScript/JavaScript (POM)',
-    stargazers_count: '1',
+      'Comprehensive QA test cases written as automated and manual testing examples',
+    stargazers_count: '0',
     forks_count: '0',
-    language: 'JavaScript',
+    language: 'Markdown',
   },
   {
     name: 'cypress-pom',
@@ -77,31 +78,22 @@ const FALLBACK_GITHUB_PROJECTS: GithubProject[] = [
     language: 'Java',
   },
   {
-    name: 'automation-test-reviewer',
-    html_url: 'https://github.com/shawon-barua/automation-test-reviewer',
+    name: 'Playwright-Pom',
+    html_url: 'https://github.com/shawon-barua/Playwright-Pom',
     description:
-      'Test automation code review, refactoring, mentoring and quality enhancement tool',
-    stargazers_count: '0',
-    forks_count: '0',
-    language: 'TypeScript',
-  },
-  {
-    name: 'protractor-POM',
-    html_url: 'https://github.com/shawon-barua/protractor-POM',
-    description:
-      'A page object based implementation of Protractor test automation framework',
-    stargazers_count: '0',
+      'Scalable automation framework built with Microsoft Playwright and TypeScript/JavaScript (POM)',
+    stargazers_count: '1',
     forks_count: '0',
     language: 'JavaScript',
   },
   {
-    name: 'TourSight',
-    html_url: 'https://github.com/shawon-barua/TourSight',
+    name: 'Toyota_used_car_analysis',
+    html_url: 'https://github.com/shawon-barua/Toyota_used_car_analysis',
     description:
-      'Platform helping travelers efficiently book and plan trips before traveling to destinations',
+      'Exploratory data analysis, price modeling, and visualization on Toyota used car dataset',
     stargazers_count: '0',
     forks_count: '0',
-    language: 'HTML',
+    language: 'Jupyter Notebook',
   },
   {
     name: 'cucumber-jvm-selenium-example-master',
@@ -109,6 +101,15 @@ const FALLBACK_GITHUB_PROJECTS: GithubProject[] = [
       'https://github.com/shawon-barua/cucumber-jvm-selenium-example-master',
     description:
       'Behavior-Driven Development (BDD) testing framework with Cucumber JVM and Selenium WebDriver',
+    stargazers_count: '0',
+    forks_count: '0',
+    language: 'Java',
+  },
+  {
+    name: 'Selenium-java-POM-TestNG',
+    html_url: 'https://github.com/shawon-barua/Selenium-java-POM-TestNG',
+    description:
+      'Web automation test framework by Selenium, Java, and TestNG following Page Object Model',
     stargazers_count: '0',
     forks_count: '0',
     language: 'Java',
@@ -141,8 +142,9 @@ const GitProfile = ({ config }: { config: Config }) => {
   });
   const [githubProjects, setGithubProjects] = useState<GithubProject[]>(() => {
     try {
+      const modeKey = config?.projects?.github?.mode || 'automatic';
       const cached = localStorage.getItem(
-        `gitprofile_repos_${config?.github?.username}`,
+        `gitprofile_repos_${config?.github?.username}_${modeKey}`,
       );
       if (cached) return JSON.parse(cached);
     } catch {}
@@ -177,12 +179,14 @@ const GitProfile = ({ config }: { config: Config }) => {
               sanitizedConfig.projects.github.automatic.exclude.projects.length
             ) {
               const excluded =
-                sanitizedConfig.projects.github.automatic.exclude.projects;
+                sanitizedConfig.projects.github.automatic.exclude.projects.map(
+                  (p) => p.toLowerCase(),
+                );
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               items = items.filter(
                 (repo: any) =>
-                  !excluded.includes(repo.name) &&
-                  !excluded.includes(repo.full_name),
+                  !excluded.includes(repo.name?.toLowerCase()) &&
+                  !excluded.includes(repo.full_name?.toLowerCase()),
               );
             }
             return items
@@ -216,21 +220,63 @@ const GitProfile = ({ config }: { config: Config }) => {
 
         return repoData.items;
       } else {
-        if (sanitizedConfig.projects.github.manual.projects.length === 0) {
+        const manualProjects = sanitizedConfig.projects.github.manual.projects;
+        if (manualProjects.length === 0) {
           return [];
         }
-        const repos = sanitizedConfig.projects.github.manual.projects
-          .map((project) => `+repo:${project}`)
-          .join('');
 
-        const url = `https://api.github.com/search/repositories?q=${repos}+fork:true&type=Repositories`;
+        try {
+          const repoResponse = await axios.get(
+            `https://api.github.com/users/${sanitizedConfig.github.username}/repos?per_page=100`,
+            {
+              headers: { 'Content-Type': 'application/vnd.github.v3+json' },
+            },
+          );
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const allUserRepos: any[] = repoResponse.data;
+          if (Array.isArray(allUserRepos)) {
+            const mapped: GithubProject[] = manualProjects
+              .map((proj) => {
+                const cleanName = proj.includes('/')
+                  ? proj.split('/')[1]
+                  : proj;
+                const found = allUserRepos.find(
+                  (r) =>
+                    r.name?.toLowerCase() === cleanName.toLowerCase() ||
+                    r.full_name?.toLowerCase() === proj.toLowerCase(),
+                );
+                if (found) {
+                  return {
+                    name: found.name,
+                    html_url: found.html_url,
+                    description: found.description || '',
+                    stargazers_count: String(found.stargazers_count ?? 0),
+                    forks_count: String(found.forks_count ?? 0),
+                    language: found.language || 'Code',
+                  };
+                }
+                const fallback = FALLBACK_GITHUB_PROJECTS.find(
+                  (f) => f.name.toLowerCase() === cleanName.toLowerCase(),
+                );
+                if (fallback) return fallback;
+                return {
+                  name: cleanName,
+                  html_url: `https://github.com/${sanitizedConfig.github.username}/${cleanName}`,
+                  description: '',
+                  stargazers_count: '0',
+                  forks_count: '0',
+                  language: 'Code',
+                };
+              })
+              .filter(Boolean);
 
-        const repoResponse = await axios.get(url, {
-          headers: { 'Content-Type': 'application/vnd.github.v3+json' },
-        });
-        const repoData = repoResponse.data;
+            if (mapped.length > 0) return mapped;
+          }
+        } catch {
+          // If GitHub API fails or rate limits, use FALLBACK_GITHUB_PROJECTS
+        }
 
-        return repoData.items;
+        return FALLBACK_GITHUB_PROJECTS;
       }
     },
     [
@@ -277,8 +323,9 @@ const GitProfile = ({ config }: { config: Config }) => {
       if (projects && projects.length > 0) {
         setGithubProjects(projects);
         try {
+          const modeKey = sanitizedConfig.projects.github.mode || 'automatic';
           localStorage.setItem(
-            `gitprofile_repos_${sanitizedConfig.github.username}`,
+            `gitprofile_repos_${sanitizedConfig.github.username}_${modeKey}`,
             JSON.stringify(projects),
           );
         } catch {}
@@ -424,12 +471,6 @@ const GitProfile = ({ config }: { config: Config }) => {
                         experiences={sanitizedConfig.experiences}
                       />
                     )}
-                    {sanitizedConfig.certifications.length !== 0 && (
-                      <CertificationCard
-                        loading={loading}
-                        certifications={sanitizedConfig.certifications}
-                      />
-                    )}
                     {sanitizedConfig.educations.length !== 0 && (
                       <EducationCard
                         loading={loading}
@@ -465,6 +506,12 @@ const GitProfile = ({ config }: { config: Config }) => {
                           sanitizedConfig.projects.external.projects
                         }
                         googleAnalyticId={sanitizedConfig.googleAnalytics.id}
+                      />
+                    )}
+                    {sanitizedConfig.certifications.length !== 0 && (
+                      <CertificationCard
+                        loading={loading}
+                        certifications={sanitizedConfig.certifications}
                       />
                     )}
                     {sanitizedConfig.blog.display && (
