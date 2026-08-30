@@ -31,6 +31,90 @@ import BlogCard from './blog-card';
 import Footer from './footer';
 import PublicationCard from './publication-card';
 
+const FALLBACK_PROFILE: Profile = {
+  avatar: 'https://avatars.githubusercontent.com/u/16514237?v=4',
+  name: 'Shawon Barua',
+  bio: 'Results-driven QA Engineer with 12+ years of experience ensuring top-tier product quality across diverse web, mobile, and AI projects. Proven expertise in test automation, strategic planning, and process optimization.',
+  location: 'Dhaka, Bangladesh',
+  company: '',
+};
+
+const FALLBACK_GITHUB_PROJECTS: GithubProject[] = [
+  {
+    name: 'API-RestAssured-TestNG-Automation',
+    html_url: 'https://github.com/shawon-barua/API-RestAssured-TestNG-Automation',
+    description:
+      'Repository to showcase API automation by RestAssured, TESTNG, JAVA',
+    stargazers_count: '0',
+    forks_count: '0',
+    language: 'Java',
+  },
+  {
+    name: 'Playwright-Pom',
+    html_url: 'https://github.com/shawon-barua/Playwright-Pom',
+    description:
+      'Scalable automation framework built with Microsoft Playwright and TypeScript/JavaScript (POM)',
+    stargazers_count: '1',
+    forks_count: '0',
+    language: 'JavaScript',
+  },
+  {
+    name: 'cypress-pom',
+    html_url: 'https://github.com/shawon-barua/cypress-pom',
+    description:
+      'Automation test suite written with Cypress, following Page Object Model architecture',
+    stargazers_count: '0',
+    forks_count: '0',
+    language: 'JavaScript',
+  },
+  {
+    name: 'Android_iOS-App-Automation',
+    html_url: 'https://github.com/shawon-barua/Android_iOS-App-Automation',
+    description:
+      'Cross-platform mobile test automation framework with Appium and Java',
+    stargazers_count: '0',
+    forks_count: '0',
+    language: 'Java',
+  },
+  {
+    name: 'automation-test-reviewer',
+    html_url: 'https://github.com/shawon-barua/automation-test-reviewer',
+    description:
+      'Test automation code review, refactoring, mentoring and quality enhancement tool',
+    stargazers_count: '0',
+    forks_count: '0',
+    language: 'TypeScript',
+  },
+  {
+    name: 'protractor-POM',
+    html_url: 'https://github.com/shawon-barua/protractor-POM',
+    description:
+      'A page object based implementation of Protractor test automation framework',
+    stargazers_count: '0',
+    forks_count: '0',
+    language: 'JavaScript',
+  },
+  {
+    name: 'TourSight',
+    html_url: 'https://github.com/shawon-barua/TourSight',
+    description:
+      'Platform helping travelers efficiently book and plan trips before traveling to destinations',
+    stargazers_count: '0',
+    forks_count: '0',
+    language: 'HTML',
+  },
+  {
+    name: 'cucumber-jvm-selenium-example-master',
+    html_url:
+      'https://github.com/shawon-barua/cucumber-jvm-selenium-example-master',
+    description:
+      'Behavior-Driven Development (BDD) testing framework with Cucumber JVM and Selenium WebDriver',
+    stargazers_count: '0',
+    forks_count: '0',
+    language: 'Java',
+  },
+];
+
 /**
  * Renders the GitProfile component.
  *
@@ -44,14 +128,77 @@ const GitProfile = ({ config }: { config: Config }) => {
   const [theme, setTheme] = useState<string>(DEFAULT_THEMES[0]);
   const [error, setError] = useState<CustomError | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [githubProjects, setGithubProjects] = useState<GithubProject[]>([]);
+  const [profile, setProfile] = useState<Profile | null>(() => {
+    try {
+      const cached = localStorage.getItem(
+        `gitprofile_profile_${config?.github?.username}`,
+      );
+      if (cached) return JSON.parse(cached);
+    } catch {}
+    return config?.github?.username === 'shawon-barua'
+      ? FALLBACK_PROFILE
+      : null;
+  });
+  const [githubProjects, setGithubProjects] = useState<GithubProject[]>(() => {
+    try {
+      const cached = localStorage.getItem(
+        `gitprofile_repos_${config?.github?.username}`,
+      );
+      if (cached) return JSON.parse(cached);
+    } catch {}
+    return config?.github?.username === 'shawon-barua'
+      ? FALLBACK_GITHUB_PROJECTS
+      : [];
+  });
 
   const getGithubProjects = useCallback(
     async (publicRepoCount: number): Promise<GithubProject[]> => {
       if (sanitizedConfig.projects.github.mode === 'automatic') {
         if (publicRepoCount === 0) {
           return [];
+        }
+
+        // Try standard user repos endpoint first (higher rate limit)
+        try {
+          const repoResponse = await axios.get(
+            `https://api.github.com/users/${sanitizedConfig.github.username}/repos?sort=${sanitizedConfig.projects.github.automatic.sortBy}&per_page=30`,
+            {
+              headers: { 'Content-Type': 'application/vnd.github.v3+json' },
+            },
+          );
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          let items = repoResponse.data;
+          if (Array.isArray(items) && items.length > 0) {
+            if (sanitizedConfig.projects.github.automatic.exclude.forks) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              items = items.filter((repo: any) => !repo.fork);
+            }
+            if (
+              sanitizedConfig.projects.github.automatic.exclude.projects.length
+            ) {
+              const excluded =
+                sanitizedConfig.projects.github.automatic.exclude.projects;
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              items = items.filter(
+                (repo: any) =>
+                  !excluded.includes(repo.name) &&
+                  !excluded.includes(repo.full_name),
+              );
+            }
+            return items
+              .slice(0, sanitizedConfig.projects.github.automatic.limit)
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              .map((repo: any) => ({
+                name: repo.name,
+                html_url: repo.html_url,
+                description: repo.description,
+                stargazers_count: repo.stargazers_count,
+                forks_count: repo.forks_count,
+                language: repo.language,
+              }));
+          }
+        } catch {
+          // Fall back to search API if user repos failed
         }
 
         const excludeRepo =
@@ -106,21 +253,62 @@ const GitProfile = ({ config }: { config: Config }) => {
       );
       const data = response.data;
 
-      setProfile({
+      const newProfile: Profile = {
         avatar: data.avatar_url,
-        name: data.name || ' ',
+        name: data.name || 'Shawon Barua',
         bio: data.bio || '',
         location: data.location || '',
         company: data.company || '',
-      });
+      };
+
+      setProfile(newProfile);
+      try {
+        localStorage.setItem(
+          `gitprofile_profile_${sanitizedConfig.github.username}`,
+          JSON.stringify(newProfile),
+        );
+      } catch {}
 
       if (!sanitizedConfig.projects.github.display) {
         return;
       }
 
-      setGithubProjects(await getGithubProjects(data.public_repos));
+      const projects = await getGithubProjects(data.public_repos);
+      if (projects && projects.length > 0) {
+        setGithubProjects(projects);
+        try {
+          localStorage.setItem(
+            `gitprofile_repos_${sanitizedConfig.github.username}`,
+            JSON.stringify(projects),
+          );
+        } catch {}
+      }
     } catch (error) {
-      handleError(error as AxiosError | Error);
+      if (
+        axios.isAxiosError(error) &&
+        (error.response?.status === 403 || error.response?.status === 429)
+      ) {
+        console.warn(
+          'GitHub rate limit reached (403/429). Using cached/fallback profile data.',
+        );
+        setProfile((prev) =>
+          prev
+            ? prev
+            : sanitizedConfig.github.username === 'shawon-barua'
+              ? FALLBACK_PROFILE
+              : null,
+        );
+        setGithubProjects((prev) =>
+          prev && prev.length > 0
+            ? prev
+            : sanitizedConfig.github.username === 'shawon-barua'
+              ? FALLBACK_GITHUB_PROJECTS
+              : [],
+        );
+        setError(null);
+      } else {
+        handleError(error as AxiosError | Error);
+      }
     } finally {
       setLoading(false);
     }
@@ -159,7 +347,13 @@ const GitProfile = ({ config }: { config: Config }) => {
         if (typeof error.response?.status === 'number') {
           switch (error.response.status) {
             case 403:
-              setError(setTooManyRequestError(reset));
+            case 429:
+              // If we already have profile or fallback data, do not crash the UI with an error screen
+              if (profile || sanitizedConfig.github.username === 'shawon-barua') {
+                setError(null);
+              } else {
+                setError(setTooManyRequestError(reset));
+              }
               break;
             case 404:
               setError(INVALID_GITHUB_USERNAME_ERROR);
