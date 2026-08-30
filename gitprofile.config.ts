@@ -9,7 +9,7 @@ const CONFIG = {
    * If you are deploying to https://<USERNAME>.github.io/<REPO_NAME>/,
    * for example your repository is at https://github.com/arifszn/portfolio, then set base to '/portfolio/'.
    */
-  base: '/portfolio/',
+  base: '/Portfolio/',
   projects: {
     github: {
       display: true, // Display GitHub projects?
@@ -20,7 +20,12 @@ const CONFIG = {
         limit: 8, // How many projects to display.
         exclude: {
           forks: false, // Forked projects will not be displayed if set to true.
-          projects: ['shawon-barua/portfolio', 'portfolio'], // These projects will not be displayed.
+          projects: [
+            'shawon-barua/Portfolio',
+            'shawon-barua/portfolio',
+            'portfolio',
+            'Portfolio',
+          ], // These projects will not be displayed.
         },
       },
       manual: {
@@ -89,7 +94,7 @@ const CONFIG = {
   },
   resume: {
     fileUrl:
-      '/portfolio/shawon_resume.pdf', // Empty fileUrl will hide the `Download Resume` button.
+      '/Portfolio/shawon_resume.pdf', // Empty fileUrl will hide the `Download Resume` button.
   },
   skills: [
     'Test Automation',
